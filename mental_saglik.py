@@ -2,13 +2,17 @@ import  pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sympy import rotations
+from sklearn.preprocessing import  LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import  RandomForestClassifier
+from  sklearn.metrics import  classification_report, confusion_matrix
 
 train = pd.read_csv('data/train.csv')
 test = pd.read_csv('data/test.csv')
 
 
 ##Veriye Genel Bakış #####
-train.info()
+train.info(verbose=True)
 test.info()
 train.describe()
 train.shape
@@ -63,6 +67,7 @@ test['Work Pressure']=test['Work Pressure'].fillna(test['Work Pressure'].median(
 ##CGPA###
 train['CGPA'].isnull().mean() * 100
 test.drop(columns= ['CGPA'], inplace=True)
+train.drop(columns= ['CGPA'], inplace=True)
 
 ##Study Satisfaction ###
 train['Study Satisfaction'].isnull().mean() * 100
@@ -116,3 +121,70 @@ for col in sayisal_veriler:
     plt.xticks(rotation= 45)
     plt.tight_layout()
     plt.show()
+
+
+### modelleme ####
+#### 2 'li objectleri labelencoder #####
+label_cols = [
+    'Gender', 'Working Professional or Student',
+    'Have you ever had suicidal thoughts ?', 'Family History of Mental Illness'
+]
+le = LabelEncoder()
+for col in label_cols:
+    train[col] = le.fit_transform(train[col])
+    test[col] = le.transform(test[col])
+
+multi_cat_cols = [
+     'Sleep Duration', 'Dietary Habits', 'Degree'
+]
+le = LabelEncoder()
+for col in multi_cat_cols:
+    train[col] = le.fit_transform(train[col])
+    test[col] = le.transform(test[col])
+
+
+train.drop(columns = ['Name', 'City'], inplace=True)
+test.drop(columns = ['Name', 'City'], inplace=True)
+
+train['Profession'].value_counts()
+train['Sleep Duration'].value_counts()
+train['Dietary Habits'].value_counts()
+train['Degree'].value_counts()
+
+silinmeyecek_kategori = [
+    'Less than 5 hours', 'More than 8 hours', '5-6 hours', '6-7 hours'
+    '7-8 hours', '8-9 hours',
+]
+train['Sleep Duration'] = train['Sleep Duration'].apply(lambda x:x if x in silinmeyecek_kategori else 'Other')
+test['Sleep Duration'] = test['Sleep Duration'].apply(lambda x:x if x in silinmeyecek_kategori else 'Other')
+
+silinmeyecek_kategori_diet = [
+    'Moderate', 'Unhealthy', 'Healthy'
+]
+train['Dietary Habits'] = train['Dietary Habits'].apply(lambda x:x if x in silinmeyecek_kategori_diet else 'Others')
+test['Dietary Habits'] = test['Dietary Habits'].apply(lambda x:x if x in silinmeyecek_kategori_diet else 'Others')
+
+degree_counts = train['Degree'].value_counts()
+rare_degress = degree_counts[degree_counts < 100].index
+train['Degree'] = train['Degree'].replace(rare_degress, 'Other')
+test['Degree'] = test['Degree'].replace(rare_degress, 'Other')
+
+X = train.drop(columns=['Depression'])
+y = train['Depression']
+
+X_train, X_test, y_train, y_test = train_test_split(X,y, test_size=0.2, random_state=42, stratify=y)
+
+model = RandomForestClassifier(random_state=42)
+model.fit(X_train,y_train)
+y_pred = model.predict(X_test)
+
+confusion_matrix(y_test, y_pred)
+classification_report(y_test, y_pred)
+
+cm = confusion_matrix(y_test, y_pred)
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+plt.title('confussion matrix')
+plt.xlabel('Tahmin Edilen')
+plt.ylabel('Gerçek Değerler')
+plt.show()
+
