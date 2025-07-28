@@ -1,6 +1,8 @@
 import  pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sympy import rotations
+
 train = pd.read_csv('data/train.csv')
 test = pd.read_csv('data/test.csv')
 
@@ -96,4 +98,21 @@ plt.ylabel('Depresyon')
 plt.xticks(rotation = 90)
 plt.show()
 
+kategorik_veriler = train.select_dtypes(include = 'object').columns.drop('Name')
+for col in kategorik_veriler:
+    plt.figure(figsize=(12,6))
+    sns.countplot(data = train, x=col,hue='Depression')
+    plt.title(f'{col} depresyona etkisi')
+    plt.xticks(rotation= 90)
+    plt.tight_layout()
+    plt.show()
 
+### sayısal değişkenlerle depresyon analizi ####
+sayisal_veriler = train.select_dtypes(include = ['float64', 'int64']).columns.drop('Depression')
+for col in sayisal_veriler:
+    plt.figure(figsize=(12,6))
+    sns.boxplot(x='Depression', y=col, data =train)
+    plt.title(f'{col} depresyona etkisi')
+    plt.xticks(rotation= 45)
+    plt.tight_layout()
+    plt.show()
